@@ -19,7 +19,7 @@ O **ParkingScript** foi criado para atender esse cenário. Ele mostra como probl
 
 ## Exemplo em ParkingScript  
 
-```parking
+parking
 vagas 3
 entrada 2
 saida 1
@@ -29,7 +29,7 @@ enquanto vagas > 0 {
    saida 1
 }
 
-parar```
+parar
 
 
 ## Explicação:
