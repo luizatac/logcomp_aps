@@ -29,7 +29,8 @@ enquanto vagas > 0 {
    saida 1
 }
 
-parar
+parar```
+
 
 ## Explicação:
 
