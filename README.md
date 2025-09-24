@@ -22,7 +22,8 @@ Da mesma forma, quando vagas são liberadas, o sistema pode **alertar** os funci
 
 ## Funcionalidades  
 
-- **Definição de vagas**  
+- **Definição de vagas**
+  
    vagas 10
 
 Define a capacidade inicial do estacionamento.
