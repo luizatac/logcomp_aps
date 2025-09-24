@@ -23,31 +23,30 @@ Da mesma forma, quando vagas são liberadas, o sistema pode **alertar** os funci
 ## Funcionalidades  
 
 - **Definição de vagas**  
-```
    vagas 10
 
 Define a capacidade inicial do estacionamento.
 
 - **Entrada de veículos**
-```
+
    entrada 2
 
 Dois veículos entram.
 
 - **Saída de veículos**
- ```
+ 
    saida 1
 
 Um veículo sai.
 
 - **Alarme**
- ```
+
    alarme
 
 Emite um sinal (equivalente a PRINT).
 
 - **Laços condicionais**
- ```
+
    enquanto vagas > 0 {
    alarme
    saida 1
@@ -56,7 +55,7 @@ Emite um sinal (equivalente a PRINT).
 Executa o bloco de comandos enquanto a condição for verdadeira.
 
 - **Parada do programa**
- ```
+ 
    parar
 
 Encerra programa.
@@ -85,9 +84,9 @@ Define o estacionamento com 3 vagas.
 
 Enquanto ainda houver vagas:
 
-     * Dispara um alarme.
+* Dispara um alarme.
 
-     * Remove mais um carro.
+* Remove mais um carro.
 
 O programa encerra com parar.
 
