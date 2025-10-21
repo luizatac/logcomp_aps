@@ -119,7 +119,7 @@ O programa encerra com parar.
 
 ## Entrega Parcial - Análise Léxica e Sintática (Flex e Bison)
 
-       * Estrutura das pastas
+### Estrutura das pastas
 
               parking-script/
               ├─ src/
@@ -131,13 +131,11 @@ O programa encerra com parar.
               ├─ Makefile
               └─ README.md
 
-       * Compilando
+### Compilando
 
-       # ParkingScript — etapa Flex/Bison (Entrega 2)
+1. No diretório do projeto:
+      make
+3. Executar:
+./parking_parser src/parking_test.ps out/program.asm
 
-       1. No diretório do projeto:
-              make
-       3. Executar:
-       ./parking_parser src/parking_test.ps out/program.asm
-
-       O parser vai gerar `out/program.asm` com instruções intermediárias.
+O parser vai gerar `out/program.asm` com instruções intermediárias.
