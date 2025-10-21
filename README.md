@@ -117,3 +117,27 @@ O programa encerra com parar.
             Numero        = Digit { Digit } ;
             Digit         = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
 
+## Entrega Parcial - Análise Léxica e Sintática (Flex e Bison)
+
+       * Estrutura das pastas
+
+              parking-script/
+              ├─ src/
+              │  ├─ parking.l        # lexer 
+              │  ├─ parking.y        # parser 
+              │  ├─ main.c          
+              │  └─ parking_test.ps  # exemplo de programa 
+              ├─ out/                # saída gerada 
+              ├─ Makefile
+              └─ README.md
+
+       * Compilando
+
+       # ParkingScript — etapa Flex/Bison (Entrega 2)
+
+       1. No diretório do projeto:
+              make
+       3. Executar:
+       ./parking_parser src/parking_test.ps out/program.asm
+
+       O parser vai gerar `out/program.asm` com instruções intermediárias.
