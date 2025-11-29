@@ -60,34 +60,86 @@ stmt:
   | comando
   ;
 
+/* -----------------------------
+   DECLARAÇÃO DE VAGAS
+   ----------------------------- */
+
 declaracao:
     VAGAS NUMBER
     {
-        fprintf(outf, "SET_CAPACITY %d\n", $2);
+        /* Na MicrowaveVM usamos o registrador TIME para representar o número de vagas disponíveis. */
+        fprintf(outf, "SET TIME %d\n", $2);
     }
   ;
 
+/* -----------------------------
+   COMANDOS
+   ----------------------------- */
+
 comando:
+    /* entrada N : decrementa TIME N vezes (até zero), usando POWER como contador */
     ENTRADA NUMBER
     {
-        fprintf(outf, "IN %d\n", $2);
+        if ($2 > 0) {
+            char *Lloop = new_label();
+            char *Lend  = new_label();
+
+            fprintf(outf, "SET POWER %d\n", $2);
+            fprintf(outf, "%s:\n", Lloop);
+            /* DECJZ POWER Lend  -> se POWER == 0 pula para Lend; senão, POWER-- e continua */
+            fprintf(outf, "DECJZ POWER %s\n", Lend);
+            /* DECJZ TIME Lloop  -> se TIME == 0 não decrementa e volta para o início;
+                                   senão TIME-- e segue para GOTO */
+            fprintf(outf, "DECJZ TIME %s\n", Lloop);
+            fprintf(outf, "GOTO %s\n", Lloop);
+            fprintf(outf, "%s:\n", Lend);
+
+            free(Lloop);
+            free(Lend);
+        }
+        /* entrada 0: não gera código (no-op) */
     }
+  /* saida N : incrementa TIME N vezes, usando POWER como contador */
   | SAIDA NUMBER
     {
-        fprintf(outf, "OUT %d\n", $2);
+        if ($2 > 0) {
+            char *Lloop = new_label();
+            char *Lend  = new_label();
+
+            fprintf(outf, "SET POWER %d\n", $2);
+            fprintf(outf, "%s:\n", Lloop);
+            fprintf(outf, "DECJZ POWER %s\n", Lend);
+            fprintf(outf, "INC TIME\n");
+            fprintf(outf, "GOTO %s\n", Lloop);
+            fprintf(outf, "%s:\n", Lend);
+
+            free(Lloop);
+            free(Lend);
+        }
+        /* saida 0: no-op */
     }
+  /* alarme : imprime o valor de TIME */
   | ALARME
     {
-        fprintf(outf, "ALARM\n");
+        fprintf(outf, "PRINT\n");
     }
-  /* ENQUANTO: usamos mid-rule actions para emitir labels antes do bloco */
+  /* enquanto vagas > 0 { bloco } */
   | ENQUANTO condicao LBRACE
     {
-        /* ação executada *antes* de reduzir o bloco */
+        Cond *c = $2;
+
+        /* Implementação da APS: só aceitamos 'enquanto vagas > 0' */
+        if (!(c->op == 1 && c->val == 0)) {
+            fprintf(stderr,
+                    "Erro: implementação atual suporta apenas 'enquanto vagas > 0'.\n");
+            exit(1);
+        }
+
         if (loop_depth >= MAX_LOOP_DEPTH) {
             fprintf(stderr, "Ninho de loops muito profundo\n");
             exit(1);
         }
+
         /* gerar rótulos e empilhar */
         char *Lstart = new_label();
         char *Lend   = new_label();
@@ -95,20 +147,14 @@ comando:
         loop_end_stack[loop_depth] = Lend;
         loop_depth++;
 
-        /* emitir rótulo de início e instrução de pulo condicional para fora do loop
-           (note: a lógica vem de $2, que é Cond*) */
+        /* Início do loop: testa TIME (vagas) > 0
+           DECJZ TIME Lend -> se TIME == 0, sai do loop (TIME não é alterado).
+           Caso contrário, TIME-- e depois restauramos com INC TIME. */
         fprintf(outf, "%s:\n", Lstart);
-        if ($2->op == 1) {
-            /* VAGAS > val  -> if VAGAS <= val goto Lend */
-            fprintf(outf, "IF VAGAS <= %d GOTO %s\n", $2->val, Lend);
-        } else if ($2->op == 2) {
-            /* VAGAS < val -> if VAGAS >= val goto Lend */
-            fprintf(outf, "IF VAGAS >= %d GOTO %s\n", $2->val, Lend);
-        } else if ($2->op == 3) {
-            /* VAGAS == val -> if VAGAS != val goto Lend */
-            fprintf(outf, "IF VAGAS != %d GOTO %s\n", $2->val, Lend);
-        }
-        free($2);
+        fprintf(outf, "DECJZ TIME %s\n", Lend);
+        fprintf(outf, "INC TIME\n");
+
+        free(c);
     }
     bloco RBRACE
     {
@@ -128,6 +174,7 @@ comando:
         free(Lstart);
         free(Lend);
     }
+  /* parar : termina o programa */
   | PARAR
     {
         fprintf(outf, "HALT\n");
@@ -138,6 +185,12 @@ bloco:
     /* vazio */
   | bloco comando
   ;
+
+/* -----------------------------
+   CONDIÇÃO DE ENQUANTO
+   (mantemos GT, LT, EQ na gramática,
+    mas a implementação só usa GT 0)
+   ----------------------------- */
 
 condicao:
     VAGAS GT NUMBER

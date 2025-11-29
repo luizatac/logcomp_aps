@@ -8,7 +8,10 @@ FILE *outf = NULL;
 int yyparse(void);
 extern FILE *yyin;
 int yylex(void);
-int yylineno = 1; /* Flex atualiza se %option yylineno */
+
+/* yylineno é definido pelo Flex (quando %option yylineno).
+   Aqui apenas declaramos que existe. */
+extern int yylineno;
 
 /* Função auxiliar para criar diretório, silenciosa se já existir */
 static void ensure_outdir(const char *outdir) {

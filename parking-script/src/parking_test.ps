@@ -1,10 +1,12 @@
-vagas 3
-entrada 2
-saida 1
+vagas 5
+
+entrada 2      // 5 -> 3 vagas ocupadas
+saida 1        // 3 -> 4 vagas livres
+alarme         // imprime 4 (estado inicial após ajustes)
 
 enquanto vagas > 0 {
-  alarme
-  saida 1
+  entrada 2    // diminui vagas de 2 em 2, sem ficar negativo
+  alarme       // imprime vagas restantes
 }
 
-parar
+parar          // encerra o programa

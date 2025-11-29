@@ -533,8 +533,8 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    53,    53,    55,    59,    60,    64,    71,    75,    79,
-      85,    84,   131,   137,   139,   143,   151,   159
+       0,    53,    53,    55,    59,    60,    68,    81,   103,   122,
+     128,   127,   178,   184,   186,   196,   204,   212
 };
 #endif
 
@@ -1105,45 +1105,86 @@ yyreduce:
   switch (yyn)
     {
   case 6: /* declaracao: VAGAS NUMBER  */
-#line 65 "src/parking.y"
+#line 69 "src/parking.y"
     {
-        fprintf(outf, "SET_CAPACITY %d\n", (yyvsp[0].ival));
+        /* Na MicrowaveVM usamos o registrador TIME para representar o número de vagas disponíveis. */
+        fprintf(outf, "SET TIME %d\n", (yyvsp[0].ival));
     }
-#line 1113 "parking.tab.c"
+#line 1114 "parking.tab.c"
     break;
 
   case 7: /* comando: ENTRADA NUMBER  */
-#line 72 "src/parking.y"
+#line 82 "src/parking.y"
     {
-        fprintf(outf, "IN %d\n", (yyvsp[0].ival));
+        if ((yyvsp[0].ival) > 0) {
+            char *Lloop = new_label();
+            char *Lend  = new_label();
+
+            fprintf(outf, "SET POWER %d\n", (yyvsp[0].ival));
+            fprintf(outf, "%s:\n", Lloop);
+            /* DECJZ POWER Lend  -> se POWER == 0 pula para Lend; senão, POWER-- e continua */
+            fprintf(outf, "DECJZ POWER %s\n", Lend);
+            /* DECJZ TIME Lloop  -> se TIME == 0 não decrementa e volta para o início;
+                                   senão TIME-- e segue para GOTO */
+            fprintf(outf, "DECJZ TIME %s\n", Lloop);
+            fprintf(outf, "GOTO %s\n", Lloop);
+            fprintf(outf, "%s:\n", Lend);
+
+            free(Lloop);
+            free(Lend);
+        }
+        /* entrada 0: não gera código (no-op) */
     }
-#line 1121 "parking.tab.c"
+#line 1139 "parking.tab.c"
     break;
 
   case 8: /* comando: SAIDA NUMBER  */
-#line 76 "src/parking.y"
+#line 104 "src/parking.y"
     {
-        fprintf(outf, "OUT %d\n", (yyvsp[0].ival));
+        if ((yyvsp[0].ival) > 0) {
+            char *Lloop = new_label();
+            char *Lend  = new_label();
+
+            fprintf(outf, "SET POWER %d\n", (yyvsp[0].ival));
+            fprintf(outf, "%s:\n", Lloop);
+            fprintf(outf, "DECJZ POWER %s\n", Lend);
+            fprintf(outf, "INC TIME\n");
+            fprintf(outf, "GOTO %s\n", Lloop);
+            fprintf(outf, "%s:\n", Lend);
+
+            free(Lloop);
+            free(Lend);
+        }
+        /* saida 0: no-op */
     }
-#line 1129 "parking.tab.c"
+#line 1161 "parking.tab.c"
     break;
 
   case 9: /* comando: ALARME  */
-#line 80 "src/parking.y"
+#line 123 "src/parking.y"
     {
-        fprintf(outf, "ALARM\n");
+        fprintf(outf, "PRINT\n");
     }
-#line 1137 "parking.tab.c"
+#line 1169 "parking.tab.c"
     break;
 
   case 10: /* $@1: %empty  */
-#line 85 "src/parking.y"
+#line 128 "src/parking.y"
     {
-        /* ação executada *antes* de reduzir o bloco */
+        Cond *c = (yyvsp[-1].cond);
+
+        /* Implementação da APS: só aceitamos 'enquanto vagas > 0' */
+        if (!(c->op == 1 && c->val == 0)) {
+            fprintf(stderr,
+                    "Erro: implementação atual suporta apenas 'enquanto vagas > 0'.\n");
+            exit(1);
+        }
+
         if (loop_depth >= MAX_LOOP_DEPTH) {
             fprintf(stderr, "Ninho de loops muito profundo\n");
             exit(1);
         }
+
         /* gerar rótulos e empilhar */
         char *Lstart = new_label();
         char *Lend   = new_label();
@@ -1151,26 +1192,20 @@ yyreduce:
         loop_end_stack[loop_depth] = Lend;
         loop_depth++;
 
-        /* emitir rótulo de início e instrução de pulo condicional para fora do loop
-           (note: a lógica vem de $2, que é Cond*) */
+        /* Início do loop: testa TIME (vagas) > 0
+           DECJZ TIME Lend -> se TIME == 0, sai do loop (TIME não é alterado).
+           Caso contrário, TIME-- e depois restauramos com INC TIME. */
         fprintf(outf, "%s:\n", Lstart);
-        if ((yyvsp[-1].cond)->op == 1) {
-            /* VAGAS > val  -> if VAGAS <= val goto Lend */
-            fprintf(outf, "IF VAGAS <= %d GOTO %s\n", (yyvsp[-1].cond)->val, Lend);
-        } else if ((yyvsp[-1].cond)->op == 2) {
-            /* VAGAS < val -> if VAGAS >= val goto Lend */
-            fprintf(outf, "IF VAGAS >= %d GOTO %s\n", (yyvsp[-1].cond)->val, Lend);
-        } else if ((yyvsp[-1].cond)->op == 3) {
-            /* VAGAS == val -> if VAGAS != val goto Lend */
-            fprintf(outf, "IF VAGAS != %d GOTO %s\n", (yyvsp[-1].cond)->val, Lend);
-        }
-        free((yyvsp[-1].cond));
+        fprintf(outf, "DECJZ TIME %s\n", Lend);
+        fprintf(outf, "INC TIME\n");
+
+        free(c);
     }
-#line 1170 "parking.tab.c"
+#line 1205 "parking.tab.c"
     break;
 
   case 11: /* comando: ENQUANTO condicao LBRACE $@1 bloco RBRACE  */
-#line 114 "src/parking.y"
+#line 160 "src/parking.y"
     {
         /* ação executada *após* o bloco: fechar o loop usando rótulos da pilha */
         if (loop_depth <= 0) {
@@ -1188,19 +1223,19 @@ yyreduce:
         free(Lstart);
         free(Lend);
     }
-#line 1192 "parking.tab.c"
+#line 1227 "parking.tab.c"
     break;
 
   case 12: /* comando: PARAR  */
-#line 132 "src/parking.y"
+#line 179 "src/parking.y"
     {
         fprintf(outf, "HALT\n");
     }
-#line 1200 "parking.tab.c"
+#line 1235 "parking.tab.c"
     break;
 
   case 15: /* condicao: VAGAS GT NUMBER  */
-#line 144 "src/parking.y"
+#line 197 "src/parking.y"
     {
         Cond *c = malloc(sizeof(Cond));
         if (!c) { perror("malloc"); exit(1); }
@@ -1208,11 +1243,11 @@ yyreduce:
         c->val = (yyvsp[0].ival);
         (yyval.cond) = c;
     }
-#line 1212 "parking.tab.c"
+#line 1247 "parking.tab.c"
     break;
 
   case 16: /* condicao: VAGAS LT NUMBER  */
-#line 152 "src/parking.y"
+#line 205 "src/parking.y"
     {
         Cond *c = malloc(sizeof(Cond));
         if (!c) { perror("malloc"); exit(1); }
@@ -1220,11 +1255,11 @@ yyreduce:
         c->val = (yyvsp[0].ival);
         (yyval.cond) = c;
     }
-#line 1224 "parking.tab.c"
+#line 1259 "parking.tab.c"
     break;
 
   case 17: /* condicao: VAGAS EQ NUMBER  */
-#line 160 "src/parking.y"
+#line 213 "src/parking.y"
     {
         Cond *c = malloc(sizeof(Cond));
         if (!c) { perror("malloc"); exit(1); }
@@ -1232,11 +1267,11 @@ yyreduce:
         c->val = (yyvsp[0].ival);
         (yyval.cond) = c;
     }
-#line 1236 "parking.tab.c"
+#line 1271 "parking.tab.c"
     break;
 
 
-#line 1240 "parking.tab.c"
+#line 1275 "parking.tab.c"
 
       default: break;
     }
@@ -1429,7 +1464,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 169 "src/parking.y"
+#line 222 "src/parking.y"
 
 
 void yyerror(const char *s) {
